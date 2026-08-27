@@ -1,0 +1,2 @@
+# OWNER: API Developer
+# Add: fastapi, uvicorn, boto3, python-multipart

@@ -1,0 +1,2 @@
+# OWNER: Worker Developer
+# Add: boto3, pillow, exifread
