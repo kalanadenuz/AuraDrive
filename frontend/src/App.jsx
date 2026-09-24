@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import GalleryGrid from './components/GalleryGrid';
 
 export default function App() {
@@ -9,6 +9,14 @@ export default function App() {
     const data = await res.json();
     setItems(data.items || []);
   };
+
+  useEffect(() => {
+    loadMedia();
+
+    const timer = setInterval(loadMedia, 4000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div>
