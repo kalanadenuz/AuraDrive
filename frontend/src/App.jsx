@@ -1,22 +1,19 @@
-/*
-OWNER: Frontend Developer
-TASK: Build the main React UI components.
-COMPONENTS TO CODE:
-1. <UploadForm />: Handle file selection and POST to API.
-2. <MediaGallery />: Fetch from GET /list and display thumbnails in a CSS grid.
-3. <StatusTracker />: Poll GET /status to update UI when processing finishes.
-*/
+import React, { useState } from 'react';
+import GalleryGrid from './components/GalleryGrid';
 
-import React from 'react';
-import './App.css';
+export default function App() {
+  const [items, setItems] = useState([]);
 
-function App() {
+  const loadMedia = async () => {
+    const res = await fetch('http://localhost:8000/media/list');
+    const data = await res.json();
+    setItems(data.items || []);
+  };
+
   return (
     <div>
       <h1>AuraDrive</h1>
-      {/* Build UI components here */}
+      <GalleryGrid items={items} />
     </div>
   );
 }
-
-export default App;
