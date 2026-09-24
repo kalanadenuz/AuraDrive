@@ -2,6 +2,7 @@ import uuid
 
 import boto3
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
+from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
 
 
 app = FastAPI(title="AuraDrive API")
@@ -14,21 +15,23 @@ s3_client = boto3.client(
 	region_name="us-east-1",
 )
 
-MAX_FILE_SIZE = 10 * 1024 * 1024
-
-
-def validate_file_size(file_bytes: bytes) -> None:
-	if len(file_bytes) > MAX_FILE_SIZE:
+def validate_uploaded_file(file: UploadFile, file_bytes: bytes) -> None:
+	if file.content_type not in ALLOWED_EXTENSIONS:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Invalid file type.",
+		)
+	if len(file_bytes) > MAX_FILE_SIZE_MB * 1024 * 1024:
 		raise HTTPException(
 			status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-			detail="File size exceeds the 10MB limit.",
+			detail="File size exceeds 10 MB.",
 		)
 
 
 @app.post("/upload", status_code=status.HTTP_202_ACCEPTED)
 async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 	contents = await file.read()
-	validate_file_size(contents)
+	validate_uploaded_file(file, contents)
 
 	media_id = str(uuid.uuid4())
 	object_key = f"raw/{media_id}_{file.filename}"
