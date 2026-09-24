@@ -48,3 +48,28 @@ def poll_queue():
         messages = res.get("Messages", [])
         for msg in messages:
             handle_message(msg)
+
+# Append to worker/worker.py
+import json
+
+def handle_message(msg):
+    try:
+        body = json.loads(msg["Body"])
+        media_id = body["media_id"]
+        raw_key = body["raw_s3_key"]
+
+        # Process image and update state
+        thumb_key = process_s3_image(media_id, raw_key)
+        update_db_status(media_id, thumb_key)
+
+        # Delete from queue to acknowledge receipt
+        sqs.delete_message(
+            QueueUrl=QUEUE_URL,
+            ReceiptHandle=msg["ReceiptHandle"]
+        )
+        print(f"Successfully processed {media_id}")
+    except Exception as e:
+        print(f"[Worker Error] Processing failure: {e}")
+
+if __name__ == "__main__":
+    poll_queue()
