@@ -1,56 +1,19 @@
-# OWNER: Worker / Processing Developer
-# TASK: Build the fault-tolerant background processor.
-# FUNCTIONS TO CODE:
-# 1. `poll_queue()`: Infinite loop checking SQS for messages.
-# 2. `process_image()`: Download from S3, use Pillow to extract EXIF, and generate WebP thumbnail.
-# 3. `update_database()`: Idempotent DynamoDB conditional update to mark status="done".
-# 4. `delete_message()`: Remove task from SQS only if processing succeeds.
-
-import time
-import json
+# worker/worker.py
 import boto3
+from worker.config import AWS_ENDPOINT_URL, RAW_BUCKET, THUMB_BUCKET
+from worker.image_processor import create_thumbnail
 
-# Connect to SQS on LocalStack
-sqs = boto3.client(
-    "sqs",
-    endpoint_url="http://localhost:4566",
-    aws_access_key_id="test",
-    aws_secret_access_key="test",
-    region_name="us-east-1"
-)
+s3 = boto3.client("s3", endpoint_url=AWS_ENDPOINT_URL, region_name="us-east-1")
 
-QUEUE_URL = "http://localhost:4566/000000000000/auradrive-queue"
-
-def fetch_messages():
-    """Fetch messages using long-polling with 30s visibility timeout."""
-    response = sqs.receive_message(
-        QueueUrl=QUEUE_URL,
-        MaxNumberOfMessages=1,
-        WaitTimeSeconds=10,
-        VisibilityTimeout=30
+def process_s3_image(media_id: str, raw_key: str) -> str:
+    raw_obj = s3.get_object(Bucket=RAW_BUCKET, Key=raw_key)
+    raw_bytes = raw_obj["Body"].read()
+    thumb_bytes = create_thumbnail(raw_bytes)
+    thumb_key = f"thumbnails/{media_id}_thumb.webp"
+    s3.put_object(
+        Bucket=THUMB_BUCKET,
+        Key=thumb_key,
+        Body=thumb_bytes,
+        ContentType="image/webp"
     )
-    return response.get("Messages", [])
-
-def start_worker():
-    """Main consumer loop polling messages indefinitely."""
-    print("Worker running. Listening for messages on auradrive-queue...")
-    while True:
-        try:
-            messages = fetch_messages()
-            for msg in messages:
-                body = json.loads(msg["Body"])
-                receipt_handle = msg["ReceiptHandle"]
-                print(f"[Worker] Processing job: {body}")
-
-                # Delete message to acknowledge successful consumption
-                sqs.delete_message(
-                    QueueUrl=QUEUE_URL,
-                    ReceiptHandle=receipt_handle
-                )
-                print("[Worker] Job processed and removed from queue.")
-        except Exception as e:
-            print(f"[Worker Error] Processing failure: {e}")
-        time.sleep(2)
-
-if __name__ == "__main__":
-    start_worker()
+    return thumb_key
