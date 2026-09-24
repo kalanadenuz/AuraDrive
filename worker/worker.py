@@ -17,3 +17,16 @@ def process_s3_image(media_id: str, raw_key: str) -> str:
         ContentType="image/webp"
     )
     return thumb_key
+
+# Append to worker/worker.py
+
+dynamodb = boto3.resource("dynamodb", endpoint_url=AWS_ENDPOINT_URL, region_name="us-east-1")
+table = dynamodb.Table("AuraDrive_Media")
+
+def update_db_status(media_id: str, thumb_key: str):
+    table.update_item(
+        Key={"media_id": media_id},
+        UpdateExpression="SET #st = :d, thumbnail_s3_key = :tk",
+        ExpressionAttributeNames={"#st": "status"},
+        ExpressionAttributeValues={":d": "done", ":tk": thumb_key}
+    )
