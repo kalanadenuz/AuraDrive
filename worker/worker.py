@@ -30,3 +30,21 @@ def update_db_status(media_id: str, thumb_key: str):
         ExpressionAttributeNames={"#st": "status"},
         ExpressionAttributeValues={":d": "done", ":tk": thumb_key}
     )
+
+# Append to worker/worker.py
+from worker.config import QUEUE_URL
+
+sqs = boto3.client("sqs", endpoint_url=AWS_ENDPOINT_URL, region_name="us-east-1")
+
+def poll_queue():
+    print("Worker running. Listening for messages on auradrive-queue...")
+    while True:
+        res = sqs.receive_message(
+            QueueUrl=QUEUE_URL,
+            MaxNumberOfMessages=1,
+            WaitTimeSeconds=10,
+            VisibilityTimeout=30
+        )
+        messages = res.get("Messages", [])
+        for msg in messages:
+            handle_message(msg)
