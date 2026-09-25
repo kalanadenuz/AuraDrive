@@ -42,3 +42,25 @@ echo "DynamoDB AuraDrive_Media table initialized successfully."
 
 
 echo "Starting AuraDrive LocalStack initialization script..."
+
+
+# Update create-table to include GSI attributes
+awslocal dynamodb create-table \
+    --table-name AuraDrive_Media \
+    --attribute-definitions \
+        AttributeName=media_id,AttributeType=S \
+        AttributeName=status,AttributeType=S \
+        AttributeName=created_at,AttributeType=S \
+    --key-schema \
+        AttributeName=media_id,KeyType=HASH \
+    --global-secondary-indexes '[
+        {
+            "IndexName": "StatusIndex",
+            "KeySchema": [
+                {"AttributeName": "status", "KeyType": "HASH"},
+                {"AttributeName": "created_at", "KeyType": "RANGE"}
+            ],
+            "Projection": {"ProjectionType": "ALL"}
+        }
+    ]' \
+    --billing-mode PAY_PER_REQUEST
