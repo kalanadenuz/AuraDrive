@@ -64,3 +64,11 @@ awslocal dynamodb create-table \
         }
     ]' \
     --billing-mode PAY_PER_REQUEST
+
+    
+    echo "--- Initialized AWS Resources ---"
+    awslocal s3 ls
+    awslocal sqs list-queues
+    awslocal dynamodb list-tables
+    echo " ✅ Infrastructure initialization finished!"
+    
