@@ -15,7 +15,19 @@ echo "S3 buckets initialized."
 
 # 2. Create SQS Queues (Main and Dead-Letter Queue)
 awslocal sqs create-queue --queue-name auradrive-dlq
-awslocal sqs create-queue --queue-name auradrive-queue
+
+#  Retrieve DLQ ARN
+DLQ_ARN=$(awslocal sqs get-queue-attributes \
+    --queue-url http://localhost:4566/000000000000/auradrive-dlq \
+    --attribute-names QueueArn \
+    --query 'Attributes.QueueArn' \
+    --output text)
+
+# Create the Main Queue with RedrivePolicy attached
+awslocal sqs create-queue \
+    --queue-name auradrive-queue \
+    --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$DLQ_ARN\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"
+
 echo "SQS Queue initialized."
 
 # 3. Create DynamoDB Table (Partition Key: media_id)
@@ -27,3 +39,36 @@ awslocal dynamodb create-table \
     --region us-east-1
 
 echo "DynamoDB AuraDrive_Media table initialized successfully."
+
+
+echo "Starting AuraDrive LocalStack initialization script..."
+
+
+# Update create-table to include GSI attributes
+awslocal dynamodb create-table \
+    --table-name AuraDrive_Media \
+    --attribute-definitions \
+        AttributeName=media_id,AttributeType=S \
+        AttributeName=status,AttributeType=S \
+        AttributeName=created_at,AttributeType=S \
+    --key-schema \
+        AttributeName=media_id,KeyType=HASH \
+    --global-secondary-indexes '[
+        {
+            "IndexName": "StatusIndex",
+            "KeySchema": [
+                {"AttributeName": "status", "KeyType": "HASH"},
+                {"AttributeName": "created_at", "KeyType": "RANGE"}
+            ],
+            "Projection": {"ProjectionType": "ALL"}
+        }
+    ]' \
+    --billing-mode PAY_PER_REQUEST
+
+    
+    echo "--- Initialized AWS Resources ---"
+    awslocal s3 ls
+    awslocal sqs list-queues
+    awslocal dynamodb list-tables
+    echo " ✅ Infrastructure initialization finished!"
+    
