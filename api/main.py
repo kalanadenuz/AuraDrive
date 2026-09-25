@@ -1,8 +1,9 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
-from api.services.aws_service import s3_client
+from api.services.aws_service import media_table, s3_client
 
 
 app = FastAPI(title="AuraDrive API")
@@ -33,6 +34,16 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 		Body=contents,
 		ContentType=file.content_type,
 	)
+
+	timestamp = datetime.now(timezone.utc).isoformat()
+	db_item = {
+		"media_id": media_id,
+		"title": title,
+		"raw_s3_key": raw_s3_key,
+		"status": "pending",
+		"created_at": timestamp,
+	}
+	media_table.put_item(Item=db_item)
 
 	return {
 		"media_id": media_id,
