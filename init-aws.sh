@@ -15,7 +15,19 @@ echo "S3 buckets initialized."
 
 # 2. Create SQS Queues (Main and Dead-Letter Queue)
 awslocal sqs create-queue --queue-name auradrive-dlq
-awslocal sqs create-queue --queue-name auradrive-queue
+
+#  Retrieve DLQ ARN
+DLQ_ARN=$(awslocal sqs get-queue-attributes \
+    --queue-url http://localhost:4566/000000000000/auradrive-dlq \
+    --attribute-names QueueArn \
+    --query 'Attributes.QueueArn' \
+    --output text)
+
+# Create the Main Queue with RedrivePolicy attached
+awslocal sqs create-queue \
+    --queue-name auradrive-queue \
+    --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"$DLQ_ARN\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"
+
 echo "SQS Queue initialized."
 
 # 3. Create DynamoDB Table (Partition Key: media_id)
@@ -27,3 +39,6 @@ awslocal dynamodb create-table \
     --region us-east-1
 
 echo "DynamoDB AuraDrive_Media table initialized successfully."
+
+
+echo "Starting AuraDrive LocalStack initialization script..."
