@@ -1,9 +1,10 @@
 import uuid
+import json
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
-from api.services.aws_service import media_table, s3_client
+from api.services.aws_service import QUEUE_URL, media_table, s3_client, sqs_client
 
 
 app = FastAPI(title="AuraDrive API")
@@ -45,12 +46,16 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 	}
 	media_table.put_item(Item=db_item)
 
+	payload = {"media_id": media_id, "raw_s3_key": raw_s3_key}
+	sqs_client.send_message(
+		QueueUrl=QUEUE_URL,
+		MessageBody=json.dumps(payload),
+	)
+
 	return {
 		"media_id": media_id,
-		"title": title,
-		"raw_key": raw_s3_key,
 		"status": "pending",
-		"message": "File uploaded successfully to S3 storage.",
+		"message": "File received and queued for processing.",
 	}
 # OWNER: API Developer
 # TASK: Build the FastAPI REST server.
