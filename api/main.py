@@ -1,19 +1,11 @@
 import uuid
 
-import boto3
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
 from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
+from api.services.aws_service import s3_client
 
 
 app = FastAPI(title="AuraDrive API")
-
-s3_client = boto3.client(
-	"s3",
-	endpoint_url="http://localhost:4566",
-	aws_access_key_id="test",
-	aws_secret_access_key="test",
-	region_name="us-east-1",
-)
 
 def validate_uploaded_file(file: UploadFile, file_bytes: bytes) -> None:
 	if file.content_type not in ALLOWED_EXTENSIONS:
@@ -34,10 +26,10 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 	validate_uploaded_file(file, contents)
 
 	media_id = str(uuid.uuid4())
-	object_key = f"raw/{media_id}_{file.filename}"
+	raw_s3_key = f"raw/{media_id}_{file.filename}"
 	s3_client.put_object(
 		Bucket="auradrive-raw",
-		Key=object_key,
+		Key=raw_s3_key,
 		Body=contents,
 		ContentType=file.content_type,
 	)
@@ -45,7 +37,7 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 	return {
 		"media_id": media_id,
 		"title": title,
-		"object_key": object_key,
+		"raw_key": raw_s3_key,
 		"status": "pending",
 		"message": "File uploaded successfully to S3 storage.",
 	}
