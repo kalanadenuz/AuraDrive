@@ -5,7 +5,7 @@
 # 2. `list_media()`: GET /list. Fetch all records from DynamoDB.
 # 3. `get_status()`: GET /status?id=... Fetch specific DB record.
 # 4. `get_media()`: GET /media?id=... Generate S3 pre-signed URL.
-#test comment
+
 import uuid
 import json
 from datetime import datetime, timezone
@@ -29,53 +29,54 @@ app.add_middleware(
 )
 
 def validate_uploaded_file(file: UploadFile, file_bytes: bytes) -> None:
-	if file.content_type not in ALLOWED_EXTENSIONS:
-		raise HTTPException(
-			status_code=status.HTTP_400_BAD_REQUEST,
-			detail="Invalid file type.",
-		)
-	if len(file_bytes) > MAX_FILE_SIZE_MB * 1024 * 1024:
-		raise HTTPException(
-			status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-			detail="File size exceeds 10 MB.",
-		)
+    if file.content_type not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type.",
+        )
+    if len(file_bytes) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="File size exceeds 10 MB.",
+        )
 
 
 @app.post("/upload", status_code=status.HTTP_202_ACCEPTED)
 async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
-	contents = await file.read()
-	validate_uploaded_file(file, contents)
+    contents = await file.read()
+    validate_uploaded_file(file, contents)
 
-	media_id = str(uuid.uuid4())
-	raw_s3_key = f"raw/{media_id}_{file.filename}"
-	s3_client.put_object(
-		Bucket="auradrive-raw",
-		Key=raw_s3_key,
-		Body=contents,
-		ContentType=file.content_type,
-	)
+    media_id = str(uuid.uuid4())
+    raw_s3_key = f"raw/{media_id}_{file.filename}"
+    s3_client.put_object(
+        Bucket="auradrive-raw",
+        Key=raw_s3_key,
+        Body=contents,
+        ContentType=file.content_type,
+    )
 
-	timestamp = datetime.now(timezone.utc).isoformat()
-	db_item = {
-		"media_id": media_id,
-		"title": title,
-		"raw_s3_key": raw_s3_key,
-		"status": "pending",
-		"created_at": timestamp,
-	}
-	media_table.put_item(Item=db_item)
+    timestamp = datetime.now(timezone.utc).isoformat()
+    db_item = {
+        "media_id": media_id,
+        "title": title,
+        "raw_s3_key": raw_s3_key,
+        "status": "pending",
+        "created_at": timestamp,
+    }
+    media_table.put_item(Item=db_item)
 
-	payload = {"media_id": media_id, "raw_s3_key": raw_s3_key}
-	sqs_client.send_message(
-		QueueUrl=QUEUE_URL,
-		MessageBody=json.dumps(payload),
-	)
+    payload = {"media_id": media_id, "raw_s3_key": raw_s3_key}
+    sqs_client.send_message(
+        QueueUrl=QUEUE_URL,
+        MessageBody=json.dumps(payload),
+    )
 
-	return {
-		"media_id": media_id,
-		"status": "pending",
-		"message": "File received and queued for processing.",
-	}
+    return {
+        "media_id": media_id,
+        "status": "pending",
+        "message": "File received and queued for processing.",
+    }
+
 
 @app.get("/list", status_code=status.HTTP_200_OK)
 async def list_media():
@@ -115,7 +116,6 @@ async def get_media(id: str = Query(..., description="The media_id of the item")
             detail="Media record not found.",
         )
 
-    # Use thumbnail if processed, otherwise fall back to raw file
     target_key = item.get("thumbnail_s3_key") or item.get("raw_s3_key")
     target_bucket = "auradrive-thumbnails" if item.get("thumbnail_s3_key") else "auradrive-raw"
 
