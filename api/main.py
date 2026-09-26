@@ -74,3 +74,57 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 		"message": "File received and queued for processing.",
 	}
 
+@app.get("/list", status_code=status.HTTP_200_OK)
+async def list_media():
+    """Fetch all media records from DynamoDB."""
+    try:
+        response = media_table.scan()
+        items = response.get("Items", [])
+        return {"items": items}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to scan DynamoDB: {str(e)}",
+        )
+
+
+@app.get("/status", status_code=status.HTTP_200_OK)
+async def get_status(id: str = Query(..., description="The media_id of the item")):
+    """Fetch a specific media item's status from DynamoDB."""
+    response = media_table.get_item(Key={"media_id": id})
+    item = response.get("Item")
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media record not found.",
+        )
+    return item
+
+
+@app.get("/media", status_code=status.HTTP_200_OK)
+async def get_media(id: str = Query(..., description="The media_id of the item")):
+    """Generate an S3 pre-signed URL to view/download the media."""
+    response = media_table.get_item(Key={"media_id": id})
+    item = response.get("Item")
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media record not found.",
+        )
+
+    # Use thumbnail if processed, otherwise fall back to raw file
+    target_key = item.get("thumbnail_s3_key") or item.get("raw_s3_key")
+    target_bucket = "auradrive-thumbnails" if item.get("thumbnail_s3_key") else "auradrive-raw"
+
+    try:
+        presigned_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": target_bucket, "Key": target_key},
+            ExpiresIn=3600,
+        )
+        return {"media_id": id, "url": presigned_url}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not generate pre-signed URL: {str(e)}",
+        )
