@@ -3,6 +3,8 @@ import json
 import time
 import boto3
 
+from worker.metadata import extract_metadata
+
 from worker.config import AWS_ENDPOINT_URL, QUEUE_URL, RAW_BUCKET, THUMB_BUCKET
 from worker.image_processor import create_thumbnail
 
@@ -58,24 +60,34 @@ def update_db_status(media_id: str, thumb_key: str):
 
 
 def handle_message(msg):
-    """Parse SQS payload, process image, update DB, and delete message."""
     try:
         body = json.loads(msg["Body"])
         media_id = body["media_id"]
         raw_key = body["raw_s3_key"]
-
-        # Process image and update state
+        
+        # Process and thumbnail
         thumb_key = process_s3_image(media_id, raw_key)
         update_db_status(media_id, thumb_key)
-
-        # Delete message to acknowledge receipt
+        
+        # Extract and attach metadata
+        raw_obj = s3.get_object(Bucket=RAW_BUCKET, Key=raw_key)
+        raw_bytes = raw_obj["Body"].read()
+        meta = extract_metadata(raw_bytes)
+        
+        table.update_item(
+            Key={"media_id": media_id},
+            UpdateExpression="SET metadata_info = :m",
+            ExpressionAttributeValues={":m": meta}
+        )
+        
+        # Delete from queue to acknowledge receipt
         sqs.delete_message(
             QueueUrl=QUEUE_URL,
             ReceiptHandle=msg["ReceiptHandle"]
         )
-        print(f"Successfully processed {media_id}")
+        print(f"[Worker] Successfully processed {media_id} with metadata: {meta}")
     except Exception as e:
-        print(f"[Worker Error] Processing failure: {e}")
+        print(f"[Worker Error] Error processing message: {e}")
 
 
 def poll_queue():
