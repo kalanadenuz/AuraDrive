@@ -10,6 +10,8 @@ import uuid
 import json
 from datetime import datetime, timezone
 
+from api.routes import gallery
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
@@ -17,6 +19,7 @@ from api.services.aws_service import QUEUE_URL, media_table, s3_client, sqs_clie
 
 
 app = FastAPI(title="AuraDrive API")
+app.include_router(gallery.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
