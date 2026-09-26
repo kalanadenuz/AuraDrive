@@ -1,13 +1,29 @@
+# OWNER: API Developer
+# TASK: Build the FastAPI REST server.
+# FUNCTIONS TO CODE:
+# 1. `upload_media()`: POST /upload. Accept multipart data, upload to S3, write "pending" to DB, push message to SQS, and return HTTP 202.
+# 2. `list_media()`: GET /list. Fetch all records from DynamoDB.
+# 3. `get_status()`: GET /status?id=... Fetch specific DB record.
+# 4. `get_media()`: GET /media?id=... Generate S3 pre-signed URL.
+#test comment
 import uuid
 import json
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status, Query
+from fastapi.middleware.cors import CORSMiddleware
 from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
 from api.services.aws_service import QUEUE_URL, media_table, s3_client, sqs_client
 
 
 app = FastAPI(title="AuraDrive API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def validate_uploaded_file(file: UploadFile, file_bytes: bytes) -> None:
 	if file.content_type not in ALLOWED_EXTENSIONS:
@@ -57,11 +73,4 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
 		"status": "pending",
 		"message": "File received and queued for processing.",
 	}
-# OWNER: API Developer
-# TASK: Build the FastAPI REST server.
-# FUNCTIONS TO CODE:
-# 1. `upload_media()`: POST /upload. Accept multipart data, upload to S3, write "pending" to DB, push message to SQS, and return HTTP 202.
-# 2. `list_media()`: GET /list. Fetch all records from DynamoDB.
-# 3. `get_status()`: GET /status?id=... Fetch specific DB record.
-# 4. `get_media()`: GET /media?id=... Generate S3 pre-signed URL.
-#test comment
+
