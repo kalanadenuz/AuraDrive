@@ -1,2 +1,6 @@
 # OWNER: Worker Developer
 # Add: boto3, pillow, exifread
+boto3>=1.34.0,<2.0.0
+botocore>=1.34.0,<2.0.0
+Pillow>=10.2.0,<11.0.0
+exifread>=3.0.0,<4.0.0

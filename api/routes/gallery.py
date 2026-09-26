@@ -1,22 +1,21 @@
-from fastapi import APIRouter
-import boto3
-from api.config import AWS_ENDPOINT_URL, AWS_REGION
+from fastapi import APIRouter, HTTPException, status
+from api.services.aws_service import media_table
 
 router = APIRouter()
 
-dynamodb = boto3.resource(
-    "dynamodb",
-    endpoint_url=AWS_ENDPOINT_URL,
-    region_name=AWS_REGION
-)
-table = dynamodb.Table("AuraDrive_Media")
-
-@router.get("/media/list")
-def list_media():
-    res = table.query(
-        IndexName="StatusIndex",
-        KeyConditionExpression="#st = :d",
-        ExpressionAttributeNames={"#st": "status"},
-        ExpressionAttributeValues={":d": "done"}
-    )
-    return {"items": res.get("Items", [])}
+@router.get("/media/list", status_code=status.HTTP_200_OK)
+async def list_media():
+    """Query DynamoDB GSI (StatusIndex) for all processed media items."""
+    try:
+        res = media_table.query(
+            IndexName="StatusIndex",
+            KeyConditionExpression="#st = :d",
+            ExpressionAttributeNames={"#st": "status"},
+            ExpressionAttributeValues={":d": "done"}
+        )
+        return {"items": res.get("Items", [])}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to query gallery items: {str(e)}"
+        )
