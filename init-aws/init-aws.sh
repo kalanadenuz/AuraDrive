@@ -8,16 +8,29 @@ echo "Initializing AuraDrive AWS resources..."
 
 # 1. Create S3 Buckets
 awslocal s3 mb s3://auradrive-media
-awslocal s3 mb s3://auradrive-raw # for raw media files
-awslocal s3 mb s3://auradrive-thumbnails # for processed thumbnails
+awslocal s3 mb s3://auradrive-raw
+awslocal s3 mb s3://auradrive-thumbnails
 echo "S3 buckets initialized."
+
+# Apply permissive CORS to thumbnails bucket for frontend display
+awslocal s3api put-bucket-cors --bucket auradrive-thumbnails --cors-configuration '{
+  "CORSRules": [
+    {
+      "AllowedHeaders": ["*"],
+      "AllowedMethods": ["GET", "HEAD"],
+      "AllowedOrigins": ["*"],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+}'
 
 # 2. Create SQS Queues (Main and Dead-Letter Queue)
 awslocal sqs create-queue --queue-name auradrive-dlq
 
-# Retrieve DLQ ARN
+# Retrieve DLQ URL dynamically then fetch ARN
+DLQ_URL=$(awslocal sqs get-queue-url --queue-name auradrive-dlq --query 'QueueUrl' --output text)
 DLQ_ARN=$(awslocal sqs get-queue-attributes \
-    --queue-url http://localhost:4566/000000000000/auradrive-dlq \
+    --queue-url "$DLQ_URL" \
     --attribute-names QueueArn \
     --query 'Attributes.QueueArn' \
     --output text)

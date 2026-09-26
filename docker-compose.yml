@@ -16,6 +16,70 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - auradrive-network
+    healthcheck:
+      test: ["CMD", "awslocal", "dynamodb", "describe-table", "--table-name", "AuraDrive_Media"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    container_name: auradrive-api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - RAW_BUCKET_NAME=auradrive-raw
+      - PROCESSED_BUCKET_NAME=auradrive-thumbnails
+      - TABLE_NAME=AuraDrive_Media
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - auradrive-network
+
+  worker:
+    container_name: auradrive-worker
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    environment:
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - RAW_BUCKET=auradrive-raw
+      - THUMB_BUCKET=auradrive-thumbnails
+      - TABLE_NAME=AuraDrive_Media
+      - QUEUE_URL=http://localstack:4566/000000000000/auradrive-queue
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - auradrive-network
+
+  frontend:
+    container_name: auradrive-frontend
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - api
+    networks:
+      - auradrive-network
 
 networks:
   auradrive-network:

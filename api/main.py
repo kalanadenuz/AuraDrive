@@ -14,12 +14,13 @@ from api.routes import gallery
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.middleware.cors import CORSMiddleware
-from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB
+from api.config import ALLOWED_EXTENSIONS, MAX_FILE_SIZE_MB, RAW_BUCKET_NAME, PROCESSED_BUCKET_NAME
 from api.services.aws_service import QUEUE_URL, media_table, s3_client, sqs_client
 
 
 app = FastAPI(title="AuraDrive API")
 app.include_router(gallery.router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,6 +28,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 def validate_uploaded_file(file: UploadFile, file_bytes: bytes) -> None:
     if file.content_type not in ALLOWED_EXTENSIONS:
@@ -49,7 +51,7 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(...)):
     media_id = str(uuid.uuid4())
     raw_s3_key = f"raw/{media_id}_{file.filename}"
     s3_client.put_object(
-        Bucket="auradrive-raw",
+        Bucket=RAW_BUCKET_NAME,
         Key=raw_s3_key,
         Body=contents,
         ContentType=file.content_type,
@@ -117,7 +119,7 @@ async def get_media(id: str = Query(..., description="The media_id of the item")
         )
 
     target_key = item.get("thumbnail_s3_key") or item.get("raw_s3_key")
-    target_bucket = "auradrive-thumbnails" if item.get("thumbnail_s3_key") else "auradrive-raw"
+    target_bucket = PROCESSED_BUCKET_NAME if item.get("thumbnail_s3_key") else RAW_BUCKET_NAME
 
     try:
         presigned_url = s3_client.generate_presigned_url(
@@ -125,7 +127,9 @@ async def get_media(id: str = Query(..., description="The media_id of the item")
             Params={"Bucket": target_bucket, "Key": target_key},
             ExpiresIn=3600,
         )
-        return {"media_id": id, "url": presigned_url}
+        # Convert internal Docker DNS 'localstack' to 'localhost' for host browser accessibility
+        browser_accessible_url = presigned_url.replace("http://localstack:4566", "http://localhost:4566")
+        return {"media_id": id, "url": browser_accessible_url}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
