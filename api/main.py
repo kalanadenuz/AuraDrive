@@ -1,4 +1,6 @@
+# api/main.py
 import json
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -26,6 +28,7 @@ app = FastAPI(
     title="AuraDrive API - Multi-Tenant Cloud Edition",
     version="2.0.0",
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,6 +58,20 @@ def _user_profile(email: str) -> dict | None:
         Key={"PK": f"USER#{email}", "SK": "PROFILE"}
     )
     return response.get("Item")
+
+
+def _rewrite_localstack_url(url: str | None) -> str | None:
+    """Rewrite internal Docker DNS to localhost for host browser consumption."""
+    if not url:
+        return None
+    if "localstack:4566" in url:
+        return url.replace("localstack:4566", "localhost:4566")
+    return url
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "auradrive-api"}
 
 
 @app.post("/api/auth/register", status_code=status.HTTP_201_CREATED)
@@ -121,12 +138,12 @@ def _validate_uploaded_file(file: UploadFile, contents: bytes) -> None:
     if file.content_type not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type.",
+            detail=f"Invalid file type {file.content_type}. Allowed: JPEG, PNG, WEBP, GIF.",
         )
     if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size exceeds {MAX_FILE_SIZE_MB} MB.",
+            detail=f"File size exceeds {MAX_FILE_SIZE_MB} MB limit.",
         )
 
 
@@ -144,6 +161,7 @@ async def upload_media(
     filename = file.filename or "upload"
     extension = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
     raw_s3_key = f"users/{user_id}/raw/{media_id}.{extension}"
+
     s3_client.put_object(
         Bucket=RAW_BUCKET_NAME,
         Key=raw_s3_key,
@@ -158,8 +176,9 @@ async def upload_media(
             "SK": f"MEDIA#{media_id}",
             "media_id": media_id,
             "user_id": user_id,
-            "title": title,
+            "title": title.strip(),
             "original_filename": filename,
+            "content_type": file.content_type,
             "status": "pending",
             "raw_s3_key": raw_s3_key,
             "created_at": now,
@@ -167,6 +186,7 @@ async def upload_media(
             "GSI1SK": now,
         }
     )
+
     sqs_client.send_message(
         QueueUrl=QUEUE_URL,
         MessageBody=json.dumps(
@@ -174,30 +194,85 @@ async def upload_media(
                 "media_id": media_id,
                 "user_id": user_id,
                 "raw_s3_key": raw_s3_key,
-                "title": title,
+                "title": title.strip(),
             }
         ),
     )
     return {
         "media_id": media_id,
         "status": "pending",
-        "message": "File received and queued.",
+        "message": "File received and queued for processing.",
     }
 
 
 @app.get("/api/media/list")
 def list_user_media(user: dict = Depends(get_current_user)):
+    user_id = user["user_id"]
     response = media_table.query(
-        KeyConditionExpression=Key("PK").eq(f"USER#{user['user_id']}")
+        KeyConditionExpression=Key("PK").eq(f"USER#{user_id}")
         & Key("SK").begins_with("MEDIA#")
     )
     items = response.get("Items", [])
+
     for item in items:
+        # 1. Full-Resolution Raw Image URL (for click/tap preview modal)
+        raw_key = item.get("raw_s3_key")
+        if raw_key:
+            try:
+                raw_url = s3_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": RAW_BUCKET_NAME, "Key": raw_key},
+                    ExpiresIn=3600,
+                )
+                item["full_image_url"] = _rewrite_localstack_url(raw_url)
+            except Exception:
+                item["full_image_url"] = None
+
+        # 2. Thumbnail URL (for dashboard grid)
         thumbnail_key = item.get("thumbnail_s3_key")
         if item.get("status") == "done" and thumbnail_key:
-            item["thumbnail_url"] = s3_client.generate_presigned_url(
-                "get_object",
-                Params={"Bucket": PROCESSED_BUCKET_NAME, "Key": thumbnail_key},
-                ExpiresIn=3600,
-            )
+            try:
+                thumb_url = s3_client.generate_presigned_url(
+                    "get_object",
+                    Params={"Bucket": PROCESSED_BUCKET_NAME, "Key": thumbnail_key},
+                    ExpiresIn=3600,
+                )
+                item["thumbnail_url"] = _rewrite_localstack_url(thumb_url)
+            except Exception:
+                item["thumbnail_url"] = None
+
     return items
+
+
+@app.get("/api/media/{media_id}")
+def get_media_detail(media_id: str, user: dict = Depends(get_current_user)):
+    user_id = user["user_id"]
+    response = media_table.get_item(
+        Key={"PK": f"USER#{user_id}", "SK": f"MEDIA#{media_id}"}
+    )
+    item = response.get("Item")
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Media item not found in your space.",
+        )
+
+    raw_key = item.get("raw_s3_key")
+    if raw_key:
+        raw_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": RAW_BUCKET_NAME, "Key": raw_key},
+            ExpiresIn=3600,
+        )
+        item["full_image_url"] = _rewrite_localstack_url(raw_url)
+
+    thumb_key = item.get("thumbnail_s3_key")
+    if thumb_key:
+        thumb_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": PROCESSED_BUCKET_NAME, "Key": thumb_key},
+            ExpiresIn=3600,
+        )
+        item["thumbnail_url"] = _rewrite_localstack_url(thumb_url)
+
+    return item
