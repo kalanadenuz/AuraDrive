@@ -1,3 +1,4 @@
+// frontend/src/components/UploadForm.jsx
 import React, { useState, useRef } from 'react';
 import { uploadMedia } from '../api_client.js';
 
@@ -88,7 +89,7 @@ export default function UploadForm({ onUploadSuccess }) {
           </label>
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             ref={fileInputRef}
             onChange={(e) => setFile(e.target.files[0] || null)}
             disabled={isUploading}
