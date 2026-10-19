@@ -7,15 +7,19 @@ export default function GalleryGrid({ items = [], onSelectMedia }) {
       <div
         style={{
           textAlign: 'center',
-          padding: '60px 20px',
-          backgroundColor: 'rgba(30, 41, 59, 0.3)',
-          border: '1px dashed #334155',
-          borderRadius: '16px',
-          color: '#64748b',
+          padding: '80px 24px',
+          background: 'var(--bg-card)',
+          border: '1px dashed var(--border-subtle)',
+          borderRadius: '20px',
+          backdropFilter: 'blur(12px)',
         }}
       >
-        <p style={{ margin: 0, fontSize: '0.95rem' }}>
-          No media found. Upload an image above to get started!
+        <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📂</div>
+        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#f1f5f9' }}>
+          Your Isolated Space is Empty
+        </h4>
+        <p style={{ margin: '6px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          Files uploaded to your account will automatically synchronize and populate here.
         </p>
       </div>
     );
@@ -25,7 +29,7 @@ export default function GalleryGrid({ items = [], onSelectMedia }) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
         gap: '24px',
       }}
     >
@@ -39,160 +43,129 @@ export default function GalleryGrid({ items = [], onSelectMedia }) {
             key={itemId}
             onClick={() => onSelectMedia && onSelectMedia(item)}
             style={{
-              backgroundColor: '#1e293b',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--bg-card)',
+              borderRadius: '16px',
+              border: '1px solid var(--border-subtle)',
               overflow: 'hidden',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)',
+              boxShadow: '0 12px 25px -5px rgba(0, 0, 0, 0.4)',
               display: 'flex',
               flexDirection: 'column',
               cursor: 'pointer',
-              transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              position: 'relative',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.borderColor = '#3b82f6';
-              e.currentTarget.style.boxShadow = '0 14px 20px -3px rgba(59, 130, 246, 0.2)';
+              e.currentTarget.style.transform = 'translateY(-6px)';
+              e.currentTarget.style.borderColor = 'var(--border-bright)';
+              e.currentTarget.style.boxShadow = '0 20px 35px -5px rgba(99, 102, 241, 0.25)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.3)';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.boxShadow = '0 12px 25px -5px rgba(0, 0, 0, 0.4)';
             }}
           >
-            {/* Image Preview Container */}
+            {/* Thumbnail Canvas */}
             <div
               style={{
                 width: '100%',
-                aspectRatio: '1 / 1',
-                backgroundColor: '#0f172a',
+                aspectRatio: '4 / 3',
+                background: '#070b14',
+                position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden',
-                position: 'relative',
               }}
             >
               {itemUrl ? (
                 <img
                   src={itemUrl}
-                  alt={item.title || 'Thumbnail'}
+                  alt={item.title || 'Media thumbnail'}
                   loading="lazy"
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
+                    transition: 'transform 0.4s ease',
                   }}
+                  onMouseEnter={(e) => (e.target.style.transform = 'scale(1.05)')}
+                  onMouseLeave={(e) => (e.target.style.transform = 'scale(1)')}
                 />
               ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    color: '#64748b',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '24px',
-                      height: '24px',
-                      border: '2px solid #3b82f6',
-                      borderTopColor: 'transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite',
-                    }}
-                  />
-                  <span>Generating WebP...</span>
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  <div className="spinner" style={{ marginBottom: '8px' }} />
+                  <div>Optimizing WebP...</div>
                 </div>
               )}
 
-              {/* Hover overlay hint */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundColor: 'rgba(15, 23, 42, 0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0,
-                  transition: 'opacity 0.2s ease',
-                  color: '#fff',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                  backdropFilter: 'blur(2px)',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
-              >
-                🔍 Click to Inspect
-              </div>
-            </div>
-
-            {/* Metadata Footer */}
-            <div
-              style={{
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-              }}
-            >
-              <div style={{ overflow: 'hidden', marginRight: '10px' }}>
-                <p
-                  style={{
-                    margin: 0,
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    color: '#f1f5f9',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                  title={item.title}
-                >
-                  {item.title || 'Untitled'}
-                </p>
-                {item.created_at && (
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
-                    {new Date(item.created_at).toLocaleDateString([], {
-                      month: 'short',
-                      day: 'numeric',
-                    })}{' '}
-                    •{' '}
-                    {new Date(item.created_at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                )}
-              </div>
-
-              {item.status && (
+              {/* Resolution Tag */}
+              {item.width && item.height && (
                 <span
                   style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    padding: '4px 8px',
+                    position: 'absolute',
+                    bottom: '8px',
+                    left: '8px',
+                    background: 'rgba(0,0,0,0.65)',
+                    backdropFilter: 'blur(8px)',
+                    color: '#e2e8f0',
+                    fontSize: '0.68rem',
+                    fontFamily: 'var(--font-mono)',
+                    padding: '3px 7px',
                     borderRadius: '6px',
-                    backgroundColor: isDone
-                      ? 'rgba(34, 197, 94, 0.15)'
-                      : 'rgba(234, 179, 8, 0.15)',
-                    color: isDone ? '#4ade80' : '#facc15',
-                    border: `1px solid ${
-                      isDone ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)'
-                    }`,
                   }}
                 >
-                  {item.status}
+                  {item.width}×{item.height}
                 </span>
               )}
+
+              {/* Status Badge */}
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  padding: '3px 8px',
+                  borderRadius: '6px',
+                  background: isDone ? 'var(--badge-done-bg)' : 'var(--badge-proc-bg)',
+                  border: `1px solid ${isDone ? 'var(--badge-done-border)' : 'var(--badge-proc-border)'}`,
+                  color: isDone ? 'var(--badge-done-text)' : 'var(--badge-proc-text)',
+                  backdropFilter: 'blur(8px)',
+                }}
+              >
+                {item.status || 'queued'}
+              </span>
+            </div>
+
+            {/* Card Content */}
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <h4
+                style={{
+                  margin: 0,
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: '#f8fafc',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={item.title}
+              >
+                {item.title || 'Untitled Asset'}
+              </h4>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                  {item.created_at ? new Date(item.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#818cf8', fontWeight: 600 }}>
+                  Inspect ↗
+                </span>
+              </div>
             </div>
           </div>
         );

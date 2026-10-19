@@ -12,6 +12,7 @@ import {
 import UploadForm from './components/UploadForm';
 import GalleryGrid from './components/GalleryGrid';
 import MediaModal from './components/MediaModal';
+import './App.css';
 
 export default function App() {
   const [token, setToken] = useState(getAuthToken());
@@ -22,7 +23,6 @@ export default function App() {
   const [fullName, setFullName] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // Gallery and Modal State
   const [items, setItems] = useState([]);
   const [selectedMedia, setSelectedMedia] = useState(null);
 
@@ -32,11 +32,10 @@ export default function App() {
       const data = await fetchUserGallery();
       setItems(data);
     } catch (err) {
-      console.error('Failed to sync gallery:', err);
+      console.error('Gallery sync error:', err);
     }
   }, [token]);
 
-  // Periodic polling for status changes (e.g. pending -> done)
   useEffect(() => {
     if (token) {
       loadGallery();
@@ -75,300 +74,183 @@ export default function App() {
     setSelectedMedia(null);
   };
 
-  // --- 1. Unauthenticated View (Login / Register) ---
+  // 1. Unauthenticated Login/Register View
   if (!token) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: 'radial-gradient(ellipse at top, #1e293b 0%, #0b0f19 80%)',
-          color: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          padding: '20px',
-        }}
-      >
-        <form
-          onSubmit={handleAuth}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            width: '100%',
-            maxWidth: '380px',
-            padding: '36px',
-            background: 'rgba(17, 24, 39, 0.85)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-          }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '1.5rem', fontWeight: 700 }}>
-              {isRegister ? 'Create Workspace' : 'Sign In to AuraDrive'}
+      <div className="auth-wrapper">
+        <div className="auth-card">
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '14px',
+                background: 'var(--accent-gradient)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.4rem',
+                marginBottom: '12px',
+                boxShadow: '0 8px 25px var(--accent-glow)',
+              }}
+            >
+              ⚡
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 6px' }}>
+              {isRegister ? 'Join AuraDrive' : 'Welcome to AuraDrive'}
             </h2>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
-              Multi-Tenant Cloud Media Platform
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              {isRegister
+                ? 'Create your isolated distributed media workspace'
+                : 'Sign in to access your tenant files & metadata'}
             </p>
           </div>
 
           {authError && (
             <div
               style={{
+                marginBottom: '16px',
                 padding: '10px 14px',
                 borderRadius: '8px',
-                fontSize: '0.85rem',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                background: 'rgba(239, 68, 68, 0.15)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 color: '#fca5a5',
+                fontSize: '0.85rem',
               }}
             >
               {authError}
             </div>
           )}
 
-          {isRegister && (
+          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {isRegister && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  className="aura-input"
+                  placeholder="e.g. Kalana Kuruppu"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
             <div>
-              <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
-                Full Name
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                Email Address
               </label>
               <input
-                type="text"
-                placeholder="Kalana Kuruppu"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                type="email"
+                className="aura-input"
+                placeholder="name@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  padding: '10px 14px',
-                  background: '#0f172a',
-                  border: '1px solid #334155',
-                  color: '#fff',
-                  borderRadius: '8px',
-                  fontSize: '0.9rem',
-                }}
               />
             </div>
-          )}
 
-          <div>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="user@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '10px 14px',
-                background: '#0f172a',
-                border: '1px solid #334155',
-                color: '#fff',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                Password
+              </label>
+              <input
+                type="password"
+                className="aura-input"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" className="aura-btn-primary" style={{ marginTop: '8px' }}>
+              {isRegister ? 'Initialize Account' : 'Sign In to Workspace'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setAuthError('');
               }}
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
               style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '10px 14px',
-                background: '#0f172a',
-                border: '1px solid #334155',
-                color: '#fff',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
+                background: 'transparent',
+                border: 'none',
+                color: '#818cf8',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                marginTop: '6px',
               }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            style={{
-              marginTop: '8px',
-              padding: '12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              border: 'none',
-              color: '#fff',
-              borderRadius: '8px',
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
-            }}
-          >
-            {isRegister ? 'Register Account' : 'Authenticate'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setAuthError('');
-            }}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#60a5fa',
-              cursor: 'pointer',
-              fontSize: '0.85rem',
-              marginTop: '4px',
-            }}
-          >
-            {isRegister ? 'Already registered? Sign In' : "Don't have an account? Sign Up"}
-          </button>
-        </form>
+            >
+              {isRegister ? 'Already have credentials? Sign In' : 'Need an isolated partition? Create Space'}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
 
-  // --- 2. Authenticated Dashboard ---
+  // 2. Authenticated Main View
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#0b0f19',
-        color: '#f8fafc',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      }}
-    >
-      {/* Top Navigation */}
-      <header
-        style={{
-          borderBottom: '1px solid #1e293b',
-          backgroundColor: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(12px)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          padding: '16px 32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '8px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 'bold',
-              fontSize: '1rem',
-            }}
-          >
-            A
+    <div className="aura-shell">
+      <header className="aura-nav">
+        <div className="aura-container aura-nav-inner">
+          <div className="aura-logo">
+            <div className="aura-logo-icon">⚡</div>
+            <span>AuraDrive</span>
           </div>
-          <span style={{ fontSize: '1.15rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-            AuraDrive
-          </span>
-          <span
-            style={{
-              backgroundColor: '#1e293b',
-              color: '#94a3b8',
-              fontSize: '0.72rem',
-              padding: '2px 8px',
-              borderRadius: '4px',
-              border: '1px solid #334155',
-            }}
-          >
-            Isolated Tenant Space
-          </span>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f1f5f9' }}>
-              {user?.full_name || 'Authenticated User'}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{user?.email}</div>
+          <div className="aura-user-pill">
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f1f5f9' }}>
+              {user?.full_name || user?.email || 'Authenticated'}
+            </span>
+            <button onClick={handleLogout} className="aura-logout-btn">
+              Logout
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
-              color: '#ef4444',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-            }}
-          >
-            Sign Out
-          </button>
         </div>
       </header>
 
-      {/* Main Workspace Body */}
-      <main
-        style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '40px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '40px',
-        }}
-      >
-        {/* Top Action Row: Upload form card */}
+      <main className="aura-container" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', gap: '48px' }}>
+        {/* Upload Section */}
         <section style={{ display: 'flex', justifyContent: 'center' }}>
           <UploadForm onUploadSuccess={() => loadGallery()} />
         </section>
 
-        {/* User Gallery Section */}
+        {/* Media Library */}
         <section>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '20px',
-            }}
-          >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '24px' }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 700 }}>My Media Space</h2>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                Tap any item to view high-resolution preview and extracted metadata
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Workspace Assets</h2>
+              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Click any thumbnail to inspect high-resolution render and extracted EXIF metadata
               </p>
             </div>
-            <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-              {items.length} {items.length === 1 ? 'item' : 'items'} stored
-            </span>
+            <div
+              style={{
+                fontSize: '0.82rem',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+                background: 'rgba(255,255,255,0.03)',
+                padding: '4px 10px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              {items.length} {items.length === 1 ? 'file' : 'files'}
+            </div>
           </div>
 
           <GalleryGrid items={items} onSelectMedia={(item) => setSelectedMedia(item)} />
         </section>
       </main>
 
-      {/* Modal Inspector Component */}
-      {selectedMedia && (
-        <MediaModal item={selectedMedia} onClose={() => setSelectedMedia(null)} />
-      )}
+      {/* Detail Modal */}
+      {selectedMedia && <MediaModal item={selectedMedia} onClose={() => setSelectedMedia(null)} />}
     </div>
   );
 }
