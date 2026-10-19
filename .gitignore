@@ -8,3 +8,4 @@ dist/
 volume/
 .DS_Store
 Thumbs.db
+template/

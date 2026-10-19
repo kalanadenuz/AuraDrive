@@ -1,31 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 :root {
-  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-main: 'Plus Jakarta Sans', 'Open Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Color Palette */
-  --bg-base: #090d16;
-  --bg-card: rgba(18, 24, 38, 0.72);
-  --bg-card-hover: rgba(28, 38, 60, 0.85);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-bright: rgba(99, 102, 241, 0.4);
+  /* Template Theme Colors (from Cloud Storage Services) */
+  --first-theme-color: #10263A;   /* Deep Midnight Navy */
+  --second-theme-color: #F84D89;  /* Vibrant Coral Pink / Magenta */
+  --third-theme-color: #592C6E;   /* Royal Purple / Plum */
 
-  --accent-primary: #6366f1;
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-  --accent-glow: rgba(99, 102, 241, 0.25);
+  /* Surface & Background */
+  --bg-base: #0A111C;
+  --bg-card: rgba(16, 38, 58, 0.82);
+  --bg-card-hover: rgba(22, 50, 76, 0.94);
+  --bg-input: rgba(10, 20, 34, 0.75);
 
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  /* Borders & Accents */
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --border-bright: rgba(248, 77, 137, 0.5);
+  --border-glow: rgba(248, 77, 137, 0.25);
 
-  --badge-done-bg: rgba(34, 197, 94, 0.12);
-  --badge-done-border: rgba(34, 197, 94, 0.3);
-  --badge-done-text: #4ade80;
+  /* Primary Brand Accent (Pink to Purple Signature Template Gradient) */
+  --accent-primary: #F84D89;
+  --accent-secondary: #592C6E;
+  --accent-gradient: linear-gradient(90deg, #F84D89 0%, #592C6E 100%);
+  --accent-gradient-reverse: linear-gradient(90deg, #592C6E 0%, #F84D89 100%);
+  --accent-gradient-diagonal: linear-gradient(135deg, #F84D89 0%, #8371F6 50%, #592C6E 100%);
+  --accent-glow: rgba(248, 77, 137, 0.35);
+  --accent-glow-purple: rgba(89, 44, 110, 0.45);
 
-  --badge-proc-bg: rgba(245, 158, 11, 0.12);
-  --badge-proc-border: rgba(245, 158, 11, 0.3);
-  --badge-proc-text: #fbbf24;
+  /* Typography */
+  --text-main: #FFFFFF;
+  --text-muted: #9BB0C5;
+  --text-dim: #647B94;
+
+  /* Pipeline Status Badges */
+  --badge-done-bg: rgba(16, 185, 129, 0.14);
+  --badge-done-border: rgba(16, 185, 129, 0.35);
+  --badge-done-text: #34d399;
+
+  --badge-proc-bg: rgba(248, 77, 137, 0.16);
+  --badge-proc-border: rgba(248, 77, 137, 0.4);
+  --badge-proc-text: #F84D89;
 }
 
 * {
@@ -42,19 +58,23 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Subtle background aurora lighting */
+/* Template Signature Floating Cloud Background Elements */
 body::before {
   content: '';
   position: fixed;
-  top: -20%;
-  left: 20%;
-  width: 60vw;
-  height: 50vh;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.05) 50%, transparent 80%);
-  filter: blur(100px);
+  top: -30px;
+  left: 6%;
+  width: 380px;
+  height: 140px;
+  background-image: url('/cloud.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.08;
+  filter: invert(1) drop-shadow(0 0 25px rgba(248, 77, 137, 0.35));
+  animation: floatCloud1 22s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: 0;
 }
@@ -62,29 +82,127 @@ body::before {
 body::after {
   content: '';
   position: fixed;
-  bottom: -10%;
-  right: 15%;
-  width: 50vw;
-  height: 45vh;
+  bottom: 60px;
+  right: 6%;
+  width: 420px;
+  height: 155px;
+  background-image: url('/cloud.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.07;
+  filter: invert(1) drop-shadow(0 0 30px rgba(89, 44, 110, 0.45));
+  animation: floatCloud2 28s ease-in-out infinite alternate-reverse;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ambient Radial Lighting Cones */
+.aura-shell::before {
+  content: '';
+  position: fixed;
+  top: -15%;
+  left: 30%;
+  width: 55vw;
+  height: 55vh;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(248, 77, 137, 0.12) 0%, rgba(89, 44, 110, 0.08) 45%, transparent 75%);
   filter: blur(120px);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Custom modern scrollbars */
+.aura-shell::after {
+  content: '';
+  position: fixed;
+  bottom: -10%;
+  left: 10%;
+  width: 45vw;
+  height: 45vh;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 38, 58, 0.7) 0%, rgba(89, 44, 110, 0.1) 50%, transparent 80%);
+  filter: blur(130px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Modern Smooth Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(10, 17, 28, 0.8);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(248, 77, 137, 0.25);
   border-radius: 4px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(248, 77, 137, 0.5);
+}
+
+/* Keyframe Animations from Template System */
+@keyframes floatCloud1 {
+  0% { transform: translateY(0px) translateX(0px); }
+  50% { transform: translateY(16px) translateX(20px); }
+  100% { transform: translateY(0px) translateX(0px); }
+}
+
+@keyframes floatCloud2 {
+  0% { transform: translateY(0px) translateX(0px) scale(1); }
+  50% { transform: translateY(-18px) translateX(-24px) scale(1.04); }
+  100% { transform: translateY(0px) translateX(0px) scale(1); }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale3d(0.92, 0.92, 0.92);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 1;
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(248, 77, 137, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(248, 77, 137, 0.6);
+  }
+}
+
+@keyframes floatBob {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }

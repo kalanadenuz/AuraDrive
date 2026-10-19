@@ -34,7 +34,7 @@ export default function UploadForm({ onUploadSuccess }) {
     e.preventDefault();
 
     if (!file || !title.trim()) {
-      setStatusMessage({ type: 'error', text: 'Please specify a title and select an image.' });
+      setStatusMessage({ type: 'error', text: 'Please enter a title and select a photo.' });
       return;
     }
 
@@ -43,7 +43,7 @@ export default function UploadForm({ onUploadSuccess }) {
 
     try {
       const data = await uploadMedia(file, title.trim());
-      setStatusMessage({ type: 'success', text: 'Uploaded successfully! Background worker dispatched.' });
+      setStatusMessage({ type: 'success', text: 'Uploaded successfully! Your photo is being processed.' });
       setTitle('');
       setFile(null);
       setPreviewUrl(null);
@@ -57,57 +57,27 @@ export default function UploadForm({ onUploadSuccess }) {
   };
 
   return (
-    <div
-      style={{
-        width: '100%',
-        maxWidth: '560px',
-        background: 'var(--bg-card)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: '20px',
-        padding: '28px',
-        boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+    <div className="aura-upload-card">
+      <div className="aura-upload-header">
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 700 }}>Upload Media Asset</h3>
-          <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            Processed into WebP with deep EXIF extraction
+          <h3 className="aura-upload-title">Upload Media</h3>
+          <p className="aura-upload-subtitle">
+            Fast cloud backup with automatic photo optimization
           </p>
         </div>
-        <div
-          style={{
-            padding: '6px 12px',
-            borderRadius: '20px',
-            background: 'rgba(99, 102, 241, 0.1)',
-            color: '#818cf8',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-          }}
-        >
-          SQS Worker Auto-Sync
+        <div className="aura-sync-badge">
+          Automatic Cloud Sync
         </div>
       </div>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {/* Dropzone */}
         <div
+          className={`aura-dropzone ${isDragging ? 'dragging' : ''} ${previewUrl ? 'has-file' : ''}`}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          style={{
-            border: `2px dashed ${isDragging ? 'var(--accent-primary)' : previewUrl ? '#10b981' : 'rgba(255,255,255,0.15)'}`,
-            background: isDragging ? 'rgba(99, 102, 241, 0.08)' : 'rgba(10, 16, 28, 0.6)',
-            borderRadius: '14px',
-            padding: '24px 16px',
-            textAlign: 'center',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
         >
           <input
             type="file"
@@ -132,16 +102,16 @@ export default function UploadForm({ onUploadSuccess }) {
                   {(file.size / (1024 * 1024)).toFixed(2)} MB • Ready to upload
                 </p>
               </div>
-              <span style={{ fontSize: '0.8rem', color: '#818cf8', fontWeight: 600 }}>Change</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', fontWeight: 600 }}>Change</span>
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>☁️</div>
+              <div className="aura-dropzone-icon">☁️</div>
               <p style={{ margin: 0, fontWeight: 600, fontSize: '0.92rem', color: '#e2e8f0' }}>
-                Drag & drop your image here, or <span style={{ color: '#818cf8' }}>browse</span>
+                Drag & drop your image here, or <span className="aura-dropzone-browse">browse</span>
               </p>
               <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                Supports PNG, JPEG, WEBP, TIFF (Up to 50MB)
+                Supports PNG, JPEG, WEBP, TIFF (Up to 15MB)
               </p>
             </div>
           )}
@@ -149,13 +119,13 @@ export default function UploadForm({ onUploadSuccess }) {
 
         {/* Title Input */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
-            Media Label / Title
+          <label className="auth-field-label" style={{ display: 'block', marginBottom: '6px' }}>
+            Photo Title
           </label>
           <input
             type="text"
             className="aura-input"
-            placeholder="e.g. Project Architecture Diagram"
+            placeholder="e.g. Summer Vacation, Mountain Sunset"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             disabled={isUploading}
@@ -166,26 +136,16 @@ export default function UploadForm({ onUploadSuccess }) {
         <button type="submit" disabled={isUploading || !file} className="aura-btn-primary">
           {isUploading ? (
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <span className="spinner" /> Uploading to S3 Raw Bucket...
+              <span className="spinner" /> Uploading to cloud...
             </span>
           ) : (
-            'Dispatch to Ingestion Pipeline'
+            'Upload to Cloud'
           )}
         </button>
       </form>
 
       {statusMessage && (
-        <div
-          style={{
-            marginTop: '16px',
-            padding: '12px 14px',
-            borderRadius: '10px',
-            fontSize: '0.85rem',
-            background: statusMessage.type === 'error' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(34, 197, 94, 0.12)',
-            border: `1px solid ${statusMessage.type === 'error' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34, 197, 94, 0.25)'}`,
-            color: statusMessage.type === 'error' ? '#fca5a5' : '#86efac',
-          }}
-        >
+        <div className={`aura-status-banner ${statusMessage.type}`}>
           {statusMessage.text}
         </div>
       )}

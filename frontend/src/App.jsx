@@ -80,44 +80,21 @@ export default function App() {
       <div className="auth-wrapper">
         <div className="auth-card">
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-            <div
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '14px',
-                background: 'var(--accent-gradient)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.4rem',
-                marginBottom: '12px',
-                boxShadow: '0 8px 25px var(--accent-glow)',
-              }}
-            >
+            <div className="auth-header-icon">
               ⚡
             </div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 6px' }}>
+            <h2 className="auth-title">
               {isRegister ? 'Join AuraDrive' : 'Welcome to AuraDrive'}
             </h2>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <p className="auth-subtitle">
               {isRegister
-                ? 'Create your isolated distributed media workspace'
-                : 'Sign in to access your tenant files & metadata'}
+                ? 'Create your secure cloud media account'
+                : 'Sign in to access your cloud photos and files'}
             </p>
           </div>
 
           {authError && (
-            <div
-              style={{
-                marginBottom: '16px',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                background: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#fca5a5',
-                fontSize: '0.85rem',
-              }}
-            >
+            <div className="auth-error-banner">
               {authError}
             </div>
           )}
@@ -125,7 +102,7 @@ export default function App() {
           <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {isRegister && (
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+                <label className="auth-field-label" style={{ display: 'block', marginBottom: '6px' }}>
                   Full Name
                 </label>
                 <input
@@ -140,7 +117,7 @@ export default function App() {
             )}
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+              <label className="auth-field-label" style={{ display: 'block', marginBottom: '6px' }}>
                 Email Address
               </label>
               <input
@@ -154,7 +131,7 @@ export default function App() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>
+              <label className="auth-field-label" style={{ display: 'block', marginBottom: '6px' }}>
                 Password
               </label>
               <input
@@ -168,25 +145,18 @@ export default function App() {
             </div>
 
             <button type="submit" className="aura-btn-primary" style={{ marginTop: '8px' }}>
-              {isRegister ? 'Initialize Account' : 'Sign In to Workspace'}
+              {isRegister ? 'Create Account' : 'Sign In'}
             </button>
 
             <button
               type="button"
+              className="aura-auth-toggle-btn"
               onClick={() => {
                 setIsRegister(!isRegister);
                 setAuthError('');
               }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#818cf8',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                marginTop: '6px',
-              }}
             >
-              {isRegister ? 'Already have credentials? Sign In' : 'Need an isolated partition? Create Space'}
+              {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
             </button>
           </form>
         </div>
@@ -215,7 +185,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="aura-container" style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', gap: '48px' }}>
+      <main className="aura-container aura-main-content">
         {/* Upload Section */}
         <section style={{ display: 'flex', justifyContent: 'center' }}>
           <UploadForm onUploadSuccess={() => loadGallery()} />
@@ -223,25 +193,15 @@ export default function App() {
 
         {/* Media Library */}
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '24px' }}>
+          <div className="aura-section-header">
             <div>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>Workspace Assets</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Click any thumbnail to inspect high-resolution render and extracted EXIF metadata
+              <h2 className="aura-section-title">Your Cloud Gallery</h2>
+              <p className="aura-section-subtitle">
+                Click any photo to view in high resolution and see image details
               </p>
             </div>
-            <div
-              style={{
-                fontSize: '0.82rem',
-                color: 'var(--text-muted)',
-                fontFamily: 'var(--font-mono)',
-                background: 'rgba(255,255,255,0.03)',
-                padding: '4px 10px',
-                borderRadius: '8px',
-                border: '1px solid var(--border-subtle)',
-              }}
-            >
-              {items.length} {items.length === 1 ? 'file' : 'files'}
+            <div className="aura-asset-counter">
+              {items.length} {items.length === 1 ? 'item' : 'items'}
             </div>
           </div>
 
