@@ -1,0 +1,12 @@
+.git*
+.vscode
+.venv
+venv
+env
+__pycache__
+*.pyc
+local.settings.json
+tests
+.pytest_cache
+Dockerfile
+docker-compose*.yml

@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   localstack:
@@ -17,7 +17,7 @@ services:
     networks:
       - auradrive-network
     healthcheck:
-      test: ["CMD", "awslocal", "dynamodb", "describe-table", "--table-name", "AuraDrive_Media"]
+      test: ["CMD", "awslocal", "dynamodb", "describe-table", "--table-name", "AuraDrive_Storage"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,6 +28,9 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    volumes:
+      - ./api:/app/api
+      - ./tests:/app/tests
     ports:
       - "8000:8000"
     environment:
@@ -37,7 +40,16 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
       - RAW_BUCKET_NAME=auradrive-raw
       - PROCESSED_BUCKET_NAME=auradrive-thumbnails
-      - TABLE_NAME=AuraDrive_Media
+      - TABLE_NAME=AuraDrive_Storage
+      - QUEUE_URL=http://localstack:4566/000000000000/auradrive-queue
+      - JWT_SECRET_KEY=AURADRIVE_SUPER_SECRET_PRODUCTION_KEY_2026
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@auradrive.io}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-AuraDrive Security}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
     depends_on:
       localstack:
         condition: service_healthy
@@ -56,7 +68,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
       - RAW_BUCKET=auradrive-raw
       - THUMB_BUCKET=auradrive-thumbnails
-      - TABLE_NAME=AuraDrive_Media
+      - TABLE_NAME=AuraDrive_Storage
       - QUEUE_URL=http://localstack:4566/000000000000/auradrive-queue
     depends_on:
       localstack:
