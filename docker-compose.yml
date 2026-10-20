@@ -28,6 +28,9 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
+    volumes:
+      - ./api:/app/api
+      - ./tests:/app/tests
     ports:
       - "8000:8000"
     environment:
@@ -40,6 +43,13 @@ services:
       - TABLE_NAME=AuraDrive_Storage
       - QUEUE_URL=http://localstack:4566/000000000000/auradrive-queue
       - JWT_SECRET_KEY=AURADRIVE_SUPER_SECRET_PRODUCTION_KEY_2026
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@auradrive.io}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-AuraDrive Security}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
     depends_on:
       localstack:
         condition: service_healthy

@@ -1,56 +1,82 @@
 # worker/worker.py
 import json
 import logging
+import os
 import time
 from datetime import datetime, timezone
 import boto3
 from botocore.config import Config
 
-from worker.config import (
-    AWS_ACCESS_KEY_ID,
-    AWS_ENDPOINT_URL,
-    AWS_REGION,
-    AWS_SECRET_ACCESS_KEY,
-    QUEUE_URL,
-    RAW_BUCKET,
-    TABLE_NAME,
-    THUMB_BUCKET,
-)
-from worker.image_processor import create_thumbnail
-from worker.metadata import extract_metadata
+try:
+    from worker.config import (
+        AWS_ACCESS_KEY_ID,
+        AWS_ENDPOINT_URL,
+        AWS_REGION,
+        AWS_SECRET_ACCESS_KEY,
+        QUEUE_URL,
+        RAW_BUCKET,
+        TABLE_NAME,
+        THUMB_BUCKET,
+    )
+    from worker.image_processor import create_thumbnail
+    from worker.metadata import extract_metadata
+except ImportError:
+    from .config import (
+        AWS_ACCESS_KEY_ID,
+        AWS_ENDPOINT_URL,
+        AWS_REGION,
+        AWS_SECRET_ACCESS_KEY,
+        QUEUE_URL,
+        RAW_BUCKET,
+        TABLE_NAME,
+        THUMB_BUCKET,
+    )
+    from .image_processor import create_thumbnail
+    from .metadata import extract_metadata
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("AuraDriveWorker")
 
-# Path-style addressing required for LocalStack S3 emulator
-s3_config = Config(s3={"addressing_style": "path"})
+AZURE_CONN = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "").strip()
+CLOUD_PROVIDER = os.getenv("CLOUD_PROVIDER", "").lower()
 
-s3 = boto3.client(
-    "s3",
-    endpoint_url=AWS_ENDPOINT_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION,
-    config=s3_config,
-)
+if CLOUD_PROVIDER == "azure" or AZURE_CONN:
+    logger.info("AuraDrive Worker: Initializing Azure Cloud services...")
+    from api.services.azure_service import AzureBlobClient, AzureQueueClient, AzureTable
+    s3 = AzureBlobClient(AZURE_CONN)
+    sqs = AzureQueueClient(AZURE_CONN)
+    table = AzureTable(AZURE_CONN, table_name=TABLE_NAME)
+else:
+    # Path-style addressing required for LocalStack S3 emulator
+    s3_config = Config(s3={"addressing_style": "path"})
 
-sqs = boto3.client(
-    "sqs",
-    endpoint_url=AWS_ENDPOINT_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION,
-)
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=AWS_ENDPOINT_URL,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+        config=s3_config,
+    )
 
-dynamodb = boto3.resource(
-    "dynamodb",
-    endpoint_url=AWS_ENDPOINT_URL,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION,
-)
+    sqs = boto3.client(
+        "sqs",
+        endpoint_url=AWS_ENDPOINT_URL,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    )
 
-table = dynamodb.Table(TABLE_NAME)
+    dynamodb = boto3.resource(
+        "dynamodb",
+        endpoint_url=AWS_ENDPOINT_URL,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    )
+
+    table = dynamodb.Table(TABLE_NAME)
 
 
 def handle_message(msg: dict) -> None:

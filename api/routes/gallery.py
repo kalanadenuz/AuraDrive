@@ -1,8 +1,12 @@
 # api/routes/gallery.py
 from fastapi import APIRouter, HTTPException, Depends, status
 from boto3.dynamodb.conditions import Key
-from api.services.aws_service import media_table, s3_client
-from api.security import get_current_user
+try:
+    from api.services.aws_service import media_table, s3_client
+    from api.security import get_current_user
+except ImportError:
+    from services.aws_service import media_table, s3_client
+    from security import get_current_user
 import os
 
 router = APIRouter()

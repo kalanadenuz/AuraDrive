@@ -7,12 +7,18 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
         changeOrigin: true,
-        // No path rewrite needed because FastAPI routes include /api
       },
     },
+  },
+  optimizeDeps: {
+    force: true,
   },
 })

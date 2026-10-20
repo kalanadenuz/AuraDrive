@@ -4,8 +4,12 @@ import json
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
-from api.services.aws_service import s3_client, media_table, sqs_client
-from api.security import get_current_user
+try:
+    from api.services.aws_service import s3_client, media_table, sqs_client
+    from api.security import get_current_user
+except ImportError:
+    from services.aws_service import s3_client, media_table, sqs_client
+    from security import get_current_user
 
 router = APIRouter()
 
