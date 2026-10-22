@@ -38,45 +38,7 @@
 
 ## 🏗️ Architecture Overview
 
-```mermaid
-flowchart LR
-    subgraph Client ["Client Presentation"]
-        Browser["React 19 SPA<br/>(Tailwind CSS + Framer Motion)"]
-    end
 
-    subgraph Gateway ["API Ingress (FastAPI)"]
-        API["FastAPI / Uvicorn ASGI<br/>(JWT Auth + Validation)"]
-    end
-
-    subgraph Broker ["Message Broker"]
-        Queue["Storage Queue / SQS<br/>('auradrive-queue')"]
-        DLQ["Dead-Letter Queue<br/>('auradrive-dlq')"]
-    end
-
-    subgraph Workers ["Worker Compute"]
-        Worker["Worker Daemon / Azure Function<br/>(Pillow + EXIF + Lanczos)"]
-    end
-
-    subgraph Storage ["Cloud Persistence"]
-        RawBlob[("Blob / S3: auradrive-raw")]
-        ThumbBlob[("Blob / S3: auradrive-thumbnails")]
-        DB[("Table / DynamoDB: AuraDriveStorage")]
-    end
-
-    Browser -->|"1. Upload File"| API
-    API -->|"2. Save Master"| RawBlob
-    API -->|"3. Put State = pending"| DB
-    API -->|"4. Enqueue Ticket"| Queue
-    API -->>|"5. HTTP 202 Accepted"| Browser
-
-    Queue -->|"6. Dequeue (60s Lease)"| Worker
-    Worker -->|"7. Fetch Master"| RawBlob
-    Worker -->|"8. Save WebP Thumbnail"| ThumbBlob
-    Worker -->|"9. Upsert State = done + EXIF"| DB
-    Worker -.->|"Poison Pill (3 Failures)"| DLQ
-
-    Browser -.->|"10. Direct Stream (Signed SAS URL)"| ThumbBlob
-```
 
 ---
 
